@@ -218,9 +218,9 @@ GameObject:
   - component: {fileID: 6219790223797424901}
   - component: {fileID: 6219790223797424900}
   - component: {fileID: 6219790223797424905}
-  - component: {fileID: 104129777557465290}
+  - component: {fileID: 5599767851595928414}
   m_Layer: 0
-  m_Name: Player
+  m_Name: ControllablePlayer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -318,7 +318,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ff3ba0becae47b8b9381191598957c8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  syncDirection: 1
+  syncDirection: 0
   syncMode: 0
   syncInterval: 0
   target: {fileID: 6219790223797424904}
@@ -357,7 +357,7 @@ MonoBehaviour:
   serverOnly: 0
   visibility: 0
   hasSpawned: 0
---- !u!114 &104129777557465290
+--- !u!114 &5599767851595928414
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -366,13 +366,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 6219790223797424899}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f70dd094fe0ce0429dc41d040553fc3, type: 3}
+  m_Script: {fileID: 11500000, guid: a3452954b8c382a4896af35f17053801, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   syncDirection: 0
   syncMode: 0
-  syncInterval: 0.1
-  textPlayerName: {fileID: 6383560293252881859}
-  floatingInfo: {fileID: 3505257385004007598}
-  playerName: 
-  playerColor: {r: 1, g: 1, b: 1, a: 1}
+  syncInterval: 0
+  _playerNameText: {fileID: 6383560293252881859}

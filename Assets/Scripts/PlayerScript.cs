@@ -33,6 +33,12 @@ public partial class PlayerScript : NetworkBehaviour
         Debug.Log($"PlayerScript{name}: RpcNotifyConnection called");
         NetworkEventManager.Instance.OnPlayerJoined.Invoke(this);
     }
+
+    [Command]
+    void CmdSendMessage(string text)
+    {
+        FindObjectOfType<PlayerUIScript>().RpcBroadcastClientMessage(netIdentity, text);
+    }
 }
 
 public partial class PlayerScript : NetworkBehaviour
@@ -66,5 +72,17 @@ public partial class PlayerScript : NetworkBehaviour
         transform.SetParent(NetworkManager.singleton.GetComponent<CustomNetworkManager>().clientScriptContainer); //Just to make things a bit neater
 
         //playerUIScript = FindObjectOfType<PlayerUIScript>();
+    }
+
+    void Update()
+    {
+
+        if (isOwned)
+        {
+            if (Input.GetKeyDown(KeyCode.U))
+            {
+                CmdSendMessage("Hello");
+            }
+        }
     }
 }

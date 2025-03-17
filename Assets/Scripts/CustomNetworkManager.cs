@@ -8,16 +8,22 @@ public class CustomNetworkManager : NetworkManager
 
     [Header("Custom Variables")]
     public Transform clientScriptContainer;
-
+    public LobbyConfig lobbyConfig;
     public override void OnClientConnect()
     {
         base.OnClientConnect();
         NetworkClient.AddPlayer();
     }
-
     public override void OnServerAddPlayer(NetworkConnectionToClient conn)
     {
-        Debug.Log("Client Connected & Joined - " + conn.connectionId);
+        if (numPlayers >= lobbyConfig.maxPlayers)
+        {
+            Debug.Log("Lobby is full. Cannot add more players.");
+            conn.Disconnect();
+            return;
+        }
+
+        Debug.Log($"Server: Client#{conn.connectionId} Connected & Joined ");
         GameObject go = Instantiate(playerPrefab);
         PlayerScript player = go.GetComponent<PlayerScript>();
         player.connectionID = conn.connectionId;
@@ -40,14 +46,17 @@ public class CustomNetworkManager : NetworkManager
         character.netIdentity.AssignClientAuthority(conn);
 
         player.PossessCharacter(character);
+
+        if(lobbyConfig.cameraMode == CameraMode.FPP)
+            character.TargetSetCamera(conn);
     }
 
     [Server]
     ControllablePlayerObject CreateCharacter(NetworkConnectionToClient conn)
     {
-        Debug.Log($"Client {conn.connectionId} is creating a character.");
+        Debug.Log($"Server: Creating Character for ConnID#{conn.connectionId}.");
 
-        Transform startPos = GetStartPosition();
+        Transform startPos = GetStartPosition(); //Gets position in either round robin/random based on inspector
         ControllablePlayerObject character = SpawnCharacterPrefab("ControllablePlayer", startPos.position, startPos.rotation);
 
         return character;

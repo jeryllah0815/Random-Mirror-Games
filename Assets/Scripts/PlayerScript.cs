@@ -2,7 +2,7 @@ using UnityEngine;
 using Mirror;
 using System;
 
-public class PlayerScript : NetworkBehaviour
+public partial class PlayerScript : NetworkBehaviour
 {
     //Player Info
     [SyncVar(hook = nameof(OnNameChanged))] private string _playerName;
@@ -13,17 +13,7 @@ public class PlayerScript : NetworkBehaviour
 
     public ControllablePlayerObject controlledCharacter;
 
-    //Object References
-    private CustomNetworkManager networkManager;
-    //private PlayerUIScript playerUIScript;
-    void OnNameChanged(string _Old, string _New)
-    {
-        _playerName = _New;
-    }
-    void OnNameColorChanged(Color _Old, Color _New)
-    {
-        _playerColor = _New;
-    }
+    [Server]
     public void PossessCharacter(ControllablePlayerObject character)
     {
         controlledCharacter = character;
@@ -37,18 +27,44 @@ public class PlayerScript : NetworkBehaviour
         _playerColor = color;
     }
 
+    [Command]
+    void CmdNotifyConnection()
+    {
+        Debug.Log($"PlayerScript{name}: RpcNotifyConnection called");
+        NetworkEventManager.Instance.OnPlayerJoined.Invoke(this);
+    }
+}
+
+public partial class PlayerScript : NetworkBehaviour
+{
+    [Client]
+    void OnNameChanged(string _Old, string _New)
+    {
+        _playerName = _New;
+    }
+    [Client]
+    void OnNameColorChanged(Color _Old, Color _New)
+    {
+        _playerColor = _New;
+    }
+
+    
     public override void OnStartClient()
     {
         base.OnStartClient();
-        name = "Player id:" + connectionID;
+        name = "PlayerID:" + connectionID;
+
+
+        if (isLocalPlayer)
+        {
+            CmdNotifyConnection();
+        }
     }
 
     void Awake()
     {
-        networkManager = FindObjectOfType<CustomNetworkManager>();
-        transform.SetParent(networkManager.clientScriptContainer); //Just to make things a bit neater
+        transform.SetParent(NetworkManager.singleton.GetComponent<CustomNetworkManager>().clientScriptContainer); //Just to make things a bit neater
 
         //playerUIScript = FindObjectOfType<PlayerUIScript>();
     }
-   
 }

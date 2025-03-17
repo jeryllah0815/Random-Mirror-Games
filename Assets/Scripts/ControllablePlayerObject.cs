@@ -13,6 +13,7 @@ public class ControllablePlayerObject : NetworkBehaviour
     [SyncVar(hook = nameof(OnColorChanged))]
     private Color characterColor;
 
+    Material playerMatCache;
     void OnNameChanged(string _Old, string _New)
     {
         name = _New;
@@ -22,6 +23,9 @@ public class ControllablePlayerObject : NetworkBehaviour
     void OnColorChanged(Color _Old, Color _New)
     {
         characterColor = _New;
+        playerMatCache = GetComponent<Renderer>().material;
+        playerMatCache.color = _New;
+        GetComponent<Renderer>().material = playerMatCache;
         UpdateNameText();
     }
 
@@ -33,10 +37,12 @@ public class ControllablePlayerObject : NetworkBehaviour
         //will call syncvarhooks
     }
 
-    public void UpdateNameText()
+    [TargetRpc]
+    public void TargetSetCamera(NetworkConnectionToClient conn)
     {
-        _playerNameText.text = characterName;
-        _playerNameText.color = characterColor;
+        if (!isOwned) return;
+        Camera.main.transform.SetParent(transform);
+        Camera.main.transform.localPosition = new Vector3(0, 0, 0);
     }
 
     [Command]
@@ -46,6 +52,11 @@ public class ControllablePlayerObject : NetworkBehaviour
         transform.Translate(0, 0, moveZ);
     }
 
+    public void UpdateNameText()
+    {
+        _playerNameText.text = characterName;
+        _playerNameText.color = characterColor;
+    }
     void HandleMovement()
     {
         float moveX = Input.GetAxis("Horizontal") * Time.deltaTime * 110.0f;
@@ -56,7 +67,7 @@ public class ControllablePlayerObject : NetworkBehaviour
 
     void Update()
     {
-        if (!isOwned) return; //checks for authority and client control
+        if (!isOwned) return; //checks for authority
 
         HandleMovement();
     }

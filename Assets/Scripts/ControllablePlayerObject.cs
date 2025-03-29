@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Mirror;
 using TMPro;
-using System;
+using UnityEngine.InputSystem;
 
 public partial class ControllablePlayerObject : NetworkBehaviour
 {
@@ -18,11 +18,12 @@ public partial class ControllablePlayerObject : NetworkBehaviour
     [SyncVar(hook = nameof(OnColorChanged))]
     private Color characterColor;
 
-    private float _verticalVelocity = 0f; // Tracks falling speed
-    private Vector2 _inputBuffer;
+    float _verticalVelocity = 0f; // Tracks falling speed
+    Vector2 _inputBuffer;
     CharacterController _characterController;
     Material _playerMatCache;
-    
+    PlayerInput _playerInput;
+
     [Command]
     public void CmdMove(float horizontal, float vertical)
     {
@@ -58,10 +59,7 @@ public partial class ControllablePlayerObject : NetworkBehaviour
         //will call syncvarhooks
     }
 
-    private void Awake()
-    {
-        _characterController = GetComponent<CharacterController>();
-    }
+    
 }
 
 public partial class ControllablePlayerObject : NetworkBehaviour
@@ -81,6 +79,11 @@ public partial class ControllablePlayerObject : NetworkBehaviour
         UpdateNameText();
     }
 
+    [Client]
+    public void OnMove(InputAction.CallbackContext context)
+    {
+        _inputBuffer  = context.ReadValue<Vector2>();
+    }
     [TargetRpc]
     public void TargetSetCamera(NetworkConnectionToClient conn)
     {
@@ -88,7 +91,6 @@ public partial class ControllablePlayerObject : NetworkBehaviour
         Camera.main.transform.SetParent(transform);
         Camera.main.transform.localPosition = new Vector3(0, 0, 0);
     }
-
 
     [Client]
     public void UpdateNameText()
@@ -110,12 +112,20 @@ public partial class ControllablePlayerObject : NetworkBehaviour
         CmdMove(_inputBuffer.x, _inputBuffer.y);
     }
 
+    private void Awake()
+    {
+        _characterController = GetComponent<CharacterController>();
+        _playerInput = GetComponent<PlayerInput>();
+        _playerInput.enabled = isOwned;
+    }
+
     private void Update()
     {
         if (!isOwned) return; //checks for authority
 
         UpdateInputBuffer();
     }
+
     void FixedUpdate()
     {
         if (!isOwned) return; //checks for authority

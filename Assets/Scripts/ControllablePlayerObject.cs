@@ -3,23 +3,51 @@ using System.Collections.Generic;
 using UnityEngine;
 using Mirror;
 using TMPro;
+using System;
+
 public partial class ControllablePlayerObject : NetworkBehaviour
 {
     [SerializeField]
     private TMP_Text _playerNameText;
-
+    [SerializeField]
+    private float _moveSpeed;
+    [SerializeField]
+    private float _rotateSpeed;
     [SyncVar(hook = nameof(OnNameChanged))]
     private string characterName;
     [SyncVar(hook = nameof(OnColorChanged))]
     private Color characterColor;
 
-    Material playerMatCache;
+    private float _verticalVelocity = 0f; // Tracks falling speed
+    private Vector2 _inputBuffer;
+    CharacterController _characterController;
+    Material _playerMatCache;
     
     [Command]
-    public void CmdMove(float moveX, float moveZ)
+    public void CmdMove(float horizontal, float vertical)
     {
-        transform.Rotate(0, moveX, 0);
-        transform.Translate(0, 0, moveZ);
+        transform.Rotate(0, horizontal * _rotateSpeed, 0);
+        // Check if the player is grounded
+        bool isGrounded = _characterController.isGrounded;
+
+        // Reset vertical velocity when grounded
+        if (isGrounded && _verticalVelocity < 0f)
+        {
+            _verticalVelocity = -0.5f; // Small downward force to stay grounded
+        }
+
+        // Apply gravity (always, even when not moving)
+        _verticalVelocity += -0.98f * Time.fixedDeltaTime;
+
+        // Calculate movement direction (relative to player's facing direction)
+        Vector3 moveDirection = transform.forward * vertical;// + transform.right * horizontalInput;
+        Vector3 horizontalMovement = moveDirection * _moveSpeed * Time.fixedDeltaTime;
+
+        // Combine horizontal movement + gravity
+        Vector3 totalMovement = horizontalMovement + Vector3.up * _verticalVelocity;
+
+        // Apply movement
+        _characterController.Move(totalMovement);
     }
     
     [Server]
@@ -30,8 +58,10 @@ public partial class ControllablePlayerObject : NetworkBehaviour
         //will call syncvarhooks
     }
 
-
-    
+    private void Awake()
+    {
+        _characterController = GetComponent<CharacterController>();
+    }
 }
 
 public partial class ControllablePlayerObject : NetworkBehaviour
@@ -45,9 +75,9 @@ public partial class ControllablePlayerObject : NetworkBehaviour
     void OnColorChanged(Color _Old, Color _New)
     {
         characterColor = _New;
-        playerMatCache = GetComponent<Renderer>().material;
-        playerMatCache.color = _New;
-        GetComponent<Renderer>().material = playerMatCache;
+        _playerMatCache = GetComponent<Renderer>().material;
+        _playerMatCache.color = _New;
+        GetComponent<Renderer>().material = _playerMatCache;
         UpdateNameText();
     }
 
@@ -68,17 +98,28 @@ public partial class ControllablePlayerObject : NetworkBehaviour
     }
 
     [Client]
+    void UpdateInputBuffer()
+    {
+        _inputBuffer.x = Input.GetAxisRaw("Horizontal");
+        _inputBuffer.y = Input.GetAxisRaw("Vertical");
+    }
+
+    [Client]
     void HandleMovement()
     {
-        float moveX = Input.GetAxis("Horizontal") * Time.deltaTime * 110.0f;
-        float moveZ = Input.GetAxis("Vertical") * Time.deltaTime * 4f;
-
-        CmdMove(moveX, moveZ);
+        CmdMove(_inputBuffer.x, _inputBuffer.y);
     }
-    void Update()
+
+    private void Update()
     {
         if (!isOwned) return; //checks for authority
 
+        UpdateInputBuffer();
+    }
+    void FixedUpdate()
+    {
+        if (!isOwned) return; //checks for authority
+        
         HandleMovement();
     }
 }

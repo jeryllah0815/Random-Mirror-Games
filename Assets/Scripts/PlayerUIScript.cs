@@ -9,6 +9,7 @@ public class PlayerUIScript : NetworkBehaviour
     public ScrollRect messageRect;
     public GameObject messagePrefab;
     public string playerName;
+    
     //Server broadcast message to all clients
 
     void Start()
@@ -20,16 +21,16 @@ public class PlayerUIScript : NetworkBehaviour
     [ClientRpc]
     public void RpcBroadcastServerMessage(string text)
     {
-        SendTextMessage($"Server: {text}");
+        SendChatMessage($"Server: {text}");
     }
 
     [ClientRpc]
     public void RpcBroadcastClientMessage(NetworkIdentity sender, string text)
     {
-        SendTextMessage($"{sender.GetComponent<PlayerScript>().playerName}: {text}");
+        SendChatMessage($"{sender.GetComponent<PlayerScript>().playerName}: {text}");
     }
 
-    void SendTextMessage(string text)
+    void SendChatMessage(string text)
     {
         var message = Instantiate(messagePrefab, chatContentBox);
         message.GetComponent<TMP_Text>().text = text;
@@ -38,4 +39,6 @@ public class PlayerUIScript : NetworkBehaviour
         //LayoutRebuilder.ForceRebuildLayoutImmediate(messageRect.transform as RectTransform);
         messageRect.verticalNormalizedPosition = 0;
     }
+
+
 }

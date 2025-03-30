@@ -5,7 +5,7 @@ using Mirror;
 using TMPro;
 using UnityEngine.InputSystem;
 
-public partial class ControllablePlayerObject : NetworkBehaviour
+public partial class PuppetScript : NetworkBehaviour
 {
     [SerializeField]
     private TMP_Text _playerNameText;
@@ -23,13 +23,12 @@ public partial class ControllablePlayerObject : NetworkBehaviour
     Material _playerMatCache;
 
     public CharacterController _characterController;
-    private PlayerInput _playerInput;
-    private InputAction moveAction;
+    private PlayerInputHandler _inputHandler;
 
     [Command]
-    public void CmdMove(float horizontal, float vertical)
+    public void CmdMove(Vector2 input)
     {
-        transform.Rotate(0, horizontal * _rotateSpeed, 0);
+        transform.Rotate(0, input.x * _rotateSpeed, 0);
         // Check if the player is grounded
         bool isGrounded = _characterController.isGrounded;
 
@@ -43,7 +42,7 @@ public partial class ControllablePlayerObject : NetworkBehaviour
         _verticalVelocity += -0.98f * Time.fixedDeltaTime;
 
         // Calculate movement direction (relative to player's facing direction)
-        Vector3 moveDirection = transform.forward * vertical;// + transform.right * horizontalInput;
+        Vector3 moveDirection = transform.forward * input.y;// + transform.right * horizontalInput;
         Vector3 horizontalMovement = moveDirection * _moveSpeed * Time.fixedDeltaTime;
 
         // Combine horizontal movement + gravity
@@ -62,13 +61,13 @@ public partial class ControllablePlayerObject : NetworkBehaviour
     }
 }
 
-public partial class ControllablePlayerObject : NetworkBehaviour
+public partial class PuppetScript : NetworkBehaviour
 {
     void OnNameChanged(string _Old, string _New)
     {
         name = _New;
         characterName = _New;
-        UpdateNameText();
+        UpdateVisuals();
     }
     void OnColorChanged(Color _Old, Color _New)
     {
@@ -76,48 +75,29 @@ public partial class ControllablePlayerObject : NetworkBehaviour
         _playerMatCache = GetComponent<Renderer>().material;
         _playerMatCache.color = _New;
         GetComponent<Renderer>().material = _playerMatCache;
-        UpdateNameText();
+        UpdateVisuals();
     }
 
-    [Client]
-    public void OnMove(InputAction.CallbackContext context) =>_inputBuffer  = context.ReadValue<Vector2>();
-
-    public void TargetSetCamera(NetworkConnectionToClient conn)
+    [TargetRpc]
+    public void TargetConfigurePuppet(NetworkConnectionToClient conn, PlayerScript ps, LobbyConfig config)
     {
-        if (!isOwned) return;
-        Camera.main.transform.SetParent(transform);
-        Camera.main.transform.localPosition = new Vector3(0, 0, 0);
-    }
-
-    public void OnPossessed(PlayerScript ps)
-    {   
-        GameObject go = gameObject;
-
-        _playerInput = go.AddComponent<PlayerInput>();
-        _playerInput.actions = ps.inputActionAsset;
-        _playerInput.defaultActionMap = "Player";
-        _playerInput.notificationBehavior = PlayerNotifications.InvokeCSharpEvents;
-        _playerInput.enabled = true;
-
-        var playerActionMap = _playerInput.actions.FindActionMap("Player");
-        moveAction = playerActionMap.FindAction("Move");
-        moveAction.started += OnMove;
-        moveAction.performed += OnMove;
-        moveAction.canceled += OnMove;
-        moveAction.Enable();
-
+        switch (config.cameraMode)
+        {
+            case CameraMode.FPP:
+                Camera.main.transform.SetParent(transform);
+                Camera.main.transform.localPosition = new Vector3(0, 0, 0);
+                break;
+            case CameraMode.TPP: Debug.LogWarning("CAMERA MODE TPP NOT IMPLEMENTED");
+                break;
+            case CameraMode.PRESET:
+                break;
+        }
+       
         CmdSyncPlayerData(ps);
     }
 
-    public void OnReleased()
-    {
-        moveAction.Disable();
-        Destroy(_playerInput);
-        Destroy(_characterController);
-    }
-
     [Client]
-    public void UpdateNameText()
+    public void UpdateVisuals()
     {
         _playerNameText.text = characterName;
         _playerNameText.color = characterColor;
@@ -127,7 +107,12 @@ public partial class ControllablePlayerObject : NetworkBehaviour
     void HandleMovement()
     {
         if(_characterController != null)
-            CmdMove(_inputBuffer.x, _inputBuffer.y);
+            CmdMove(_inputHandler.MoveInput);
+    }
+
+    void Awake()
+    {
+        _inputHandler = PlayerInputHandler.Instance;
     }
 
     void FixedUpdate()

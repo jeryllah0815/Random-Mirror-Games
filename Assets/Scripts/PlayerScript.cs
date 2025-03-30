@@ -11,26 +11,8 @@ public partial class PlayerScript : NetworkBehaviour
     public Color playerColor => _playerColor;
     [SyncVar] public int connectionID;
 
-    public ControllablePlayerObject controlledCharacter;
+    public PuppetScript controlledCharacter;
     public InputActionAsset inputActionAsset;
-    [TargetRpc]
-    public void TargetPossessCharacter(NetworkConnectionToClient conn, ControllablePlayerObject character)
-    {
-        if (controlledCharacter != null)
-            character.OnReleased();
-
-        controlledCharacter = character;
-        character.OnPossessed(this);
-    }
-
-    [TargetRpc]
-    public void TargetReleaseCharacter(NetworkConnectionToClient conn, ControllablePlayerObject character)
-    {
-        if (controlledCharacter != null)
-            character.OnReleased();
-
-        controlledCharacter = null;
-    }
 
     [Server]
     public void SetPlayerData(string playerName, Color color)

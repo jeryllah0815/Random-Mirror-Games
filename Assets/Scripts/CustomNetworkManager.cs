@@ -42,28 +42,25 @@ public class CustomNetworkManager : NetworkManager
         playerCharacters[conn] = player.gameObject;
         NetworkServer.AddPlayerForConnection(conn, go);
 
-        var character = CreateCharacter(conn);
+        var character = CreatePuppet(conn);
         character.netIdentity.AssignClientAuthority(conn);
 
-        player.TargetPossessCharacter(conn, character);
-
-        if(lobbyConfig.cameraMode == CameraMode.FPP)
-            character.TargetSetCamera(conn);
+        character.TargetConfigurePuppet(conn, player, lobbyConfig);
     }
 
     [Server]
-    ControllablePlayerObject CreateCharacter(NetworkConnectionToClient conn)
+    PuppetScript CreatePuppet(NetworkConnectionToClient conn)
     {
         Debug.Log($"Server: Creating Character for ConnID#{conn.connectionId}.");
 
         Transform startPos = GetStartPosition(); //Gets position in either round robin/random based on inspector
-        ControllablePlayerObject character = SpawnCharacterPrefab("ControllablePlayer", startPos.position, startPos.rotation);
+        PuppetScript character = SpawnPuppetPrefab(GetPuppetPrefabName(), startPos.position, startPos.rotation);
 
         return character;
     }
 
     [Server]
-    public ControllablePlayerObject SpawnCharacterPrefab(string prefabName, Vector3 position, Quaternion rotation)
+    public PuppetScript SpawnPuppetPrefab(string prefabName, Vector3 position, Quaternion rotation)
     {
         GameObject prefab = spawnPrefabs.Find(p => p.name == prefabName);
         if (prefab == null)
@@ -76,7 +73,16 @@ public class CustomNetworkManager : NetworkManager
         GameObject newObject = Instantiate(prefab, position, rotation);
         NetworkServer.Spawn(newObject);
 
-        return newObject.GetComponent<ControllablePlayerObject>();
+        return newObject.GetComponent<PuppetScript>();
+    }
+
+    string GetPuppetPrefabName()
+    {
+        switch (lobbyConfig.gameMode)
+        {
+            case GameMode.TENNIS:   return "TennisPuppet";
+            default:    return "BasePuppet";
+        }
     }
 }
 

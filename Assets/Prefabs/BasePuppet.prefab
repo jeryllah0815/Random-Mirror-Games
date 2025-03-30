@@ -221,7 +221,7 @@ GameObject:
   - component: {fileID: 6219790223797424900}
   - component: {fileID: 6219790223797424905}
   m_Layer: 0
-  m_Name: ControllablePlayer
+  m_Name: BasePuppet
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -259,19 +259,9 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   _playerNameText: {fileID: 6383560293252881859}
-  _moveSpeed: 2
+  _moveSpeed: 1
   _rotateSpeed: 1
   _characterController: {fileID: -969902299193444473}
-  _playerInput: {fileID: 0}
-  moveAction:
-    m_Name: Move
-    m_Type: 0
-    m_ExpectedControlType: 
-    m_Id: c1003734-6fdb-46a7-bf29-5c5fc689fc5c
-    m_Processors: 
-    m_Interactions: 
-    m_SingletonActionBindings: []
-    m_Flags: 0
 --- !u!143 &-969902299193444473
 CharacterController:
   m_ObjectHideFlags: 0

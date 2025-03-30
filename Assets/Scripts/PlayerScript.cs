@@ -1,6 +1,6 @@
 using UnityEngine;
 using Mirror;
-using System;
+using UnityEngine.InputSystem;
 
 public partial class PlayerScript : NetworkBehaviour
 {
@@ -12,12 +12,24 @@ public partial class PlayerScript : NetworkBehaviour
     [SyncVar] public int connectionID;
 
     public ControllablePlayerObject controlledCharacter;
-
-    [Server]
-    public void PossessCharacter(ControllablePlayerObject character)
+    public InputActionAsset inputActionAsset;
+    [TargetRpc]
+    public void TargetPossessCharacter(NetworkConnectionToClient conn, ControllablePlayerObject character)
     {
+        if (controlledCharacter != null)
+            character.OnReleased();
+
         controlledCharacter = character;
-        character.SetPlayerScript(this);
+        character.OnPossessed(this);
+    }
+
+    [TargetRpc]
+    public void TargetReleaseCharacter(NetworkConnectionToClient conn, ControllablePlayerObject character)
+    {
+        if (controlledCharacter != null)
+            character.OnReleased();
+
+        controlledCharacter = null;
     }
 
     [Server]
@@ -53,7 +65,6 @@ public partial class PlayerScript : NetworkBehaviour
     {
         _playerColor = _New;
     }
-
     
     public override void OnStartClient()
     {

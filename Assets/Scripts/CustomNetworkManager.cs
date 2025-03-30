@@ -45,7 +45,7 @@ public class CustomNetworkManager : NetworkManager
         var character = CreateCharacter(conn);
         character.netIdentity.AssignClientAuthority(conn);
 
-        player.PossessCharacter(character);
+        player.TargetPossessCharacter(conn, character);
 
         if(lobbyConfig.cameraMode == CameraMode.FPP)
             character.TargetSetCamera(conn);

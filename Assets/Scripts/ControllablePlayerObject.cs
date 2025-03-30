@@ -20,9 +20,11 @@ public partial class ControllablePlayerObject : NetworkBehaviour
 
     float _verticalVelocity = 0f; // Tracks falling speed
     Vector2 _inputBuffer;
-    CharacterController _characterController;
     Material _playerMatCache;
-    PlayerInput _playerInput;
+
+    public CharacterController _characterController;
+    private PlayerInput _playerInput;
+    private InputAction moveAction;
 
     [Command]
     public void CmdMove(float horizontal, float vertical)
@@ -50,16 +52,14 @@ public partial class ControllablePlayerObject : NetworkBehaviour
         // Apply movement
         _characterController.Move(totalMovement);
     }
-    
-    [Server]
-    public void SetPlayerScript(PlayerScript ps) 
+
+    [Command]
+    void CmdSyncPlayerData(PlayerScript ps)
     {
+        //Serverside - SERVER
         characterName = ps.playerName;
         characterColor = ps.playerColor;
-        //will call syncvarhooks
     }
-
-    
 }
 
 public partial class ControllablePlayerObject : NetworkBehaviour
@@ -80,16 +80,40 @@ public partial class ControllablePlayerObject : NetworkBehaviour
     }
 
     [Client]
-    public void OnMove(InputAction.CallbackContext context)
-    {
-        _inputBuffer  = context.ReadValue<Vector2>();
-    }
-    [TargetRpc]
+    public void OnMove(InputAction.CallbackContext context) =>_inputBuffer  = context.ReadValue<Vector2>();
+
     public void TargetSetCamera(NetworkConnectionToClient conn)
     {
         if (!isOwned) return;
         Camera.main.transform.SetParent(transform);
         Camera.main.transform.localPosition = new Vector3(0, 0, 0);
+    }
+
+    public void OnPossessed(PlayerScript ps)
+    {   
+        GameObject go = gameObject;
+
+        _playerInput = go.AddComponent<PlayerInput>();
+        _playerInput.actions = ps.inputActionAsset;
+        _playerInput.defaultActionMap = "Player";
+        _playerInput.notificationBehavior = PlayerNotifications.InvokeCSharpEvents;
+        _playerInput.enabled = true;
+
+        var playerActionMap = _playerInput.actions.FindActionMap("Player");
+        moveAction = playerActionMap.FindAction("Move");
+        moveAction.started += OnMove;
+        moveAction.performed += OnMove;
+        moveAction.canceled += OnMove;
+        moveAction.Enable();
+
+        CmdSyncPlayerData(ps);
+    }
+
+    public void OnReleased()
+    {
+        moveAction.Disable();
+        Destroy(_playerInput);
+        Destroy(_characterController);
     }
 
     [Client]
@@ -100,30 +124,10 @@ public partial class ControllablePlayerObject : NetworkBehaviour
     }
 
     [Client]
-    void UpdateInputBuffer()
-    {
-        _inputBuffer.x = Input.GetAxisRaw("Horizontal");
-        _inputBuffer.y = Input.GetAxisRaw("Vertical");
-    }
-
-    [Client]
     void HandleMovement()
     {
-        CmdMove(_inputBuffer.x, _inputBuffer.y);
-    }
-
-    private void Awake()
-    {
-        _characterController = GetComponent<CharacterController>();
-        _playerInput = GetComponent<PlayerInput>();
-        _playerInput.enabled = isOwned;
-    }
-
-    private void Update()
-    {
-        if (!isOwned) return; //checks for authority
-
-        UpdateInputBuffer();
+        if(_characterController != null)
+            CmdMove(_inputBuffer.x, _inputBuffer.y);
     }
 
     void FixedUpdate()

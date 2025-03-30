@@ -36,7 +36,7 @@ public class BaseGameManager : NetworkBehaviour
             currentCountdown = 0;
             //countdownText.text = "GO!";
             // You can add any action you want to happen when timer reaches 0 here
-            Debug.Log("Server: Countdown Done");
+            //Debug.Log("Server: Countdown Done");
         }
     }
 }

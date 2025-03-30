@@ -67,3 +67,4 @@ MonoBehaviour:
   syncInterval: 0
   connectionID: 0
   controlledCharacter: {fileID: 0}
+  inputActionAsset: {fileID: -944628639613478452, guid: 7db2c50a10cf24b499baf4de42a74f56, type: 3}
